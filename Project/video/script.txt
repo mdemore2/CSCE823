@@ -1,0 +1,82 @@
+##### BACKGROUND #####
+
+GPS spoofing is the act of transmitting false GPS signals to convince GPS recievers they are in another position.
+Given the distance from GPS satellites to recievers, it is very easy to overpower genuine signals with spoofed ones.
+With the proliferation of Software Defined radios, these attacks have become increasingly common.
+
+They pose a particular issue to the Air Force, with the reliance of aircraft on GPS for navigation and timing.
+Iran has been one of our adversaries to make use of this technology, in an attempt to direct our air and sea craft into their territory to justify siezure.
+
+Many solutions to GPS spoofing involve specifically tailored hardware for each system, which becomes costly and difficult to integrate across our fleet.
+
+The MIL-STD-1553 communications bus is the primary way avionics components communicate with each other on our air and space craft, but is succeptible particularly because it assumes trust between all components.
+However, implementing a bus monitor may be an easy and effective solution to combat GPS spoofing.
+
+
+##### PROBLEM STATEMENT #####
+For this project, I addressed the problem of a lack of lightweight and flexible solutions to detect GPS spoofing across a variety of aircraft types and models.
+I hypothesize that a MIL-STD-1553 bus monitor with a trained machine learning model could effectively detect GPS spoofing using the data from messages passed over the bus.
+
+In addition, it is of interest what model may be most effective in classifying this data. This will be primarly measured through Recall, which prioritizes True Positive Rate over False Negative Rate, because we would
+rather falsely trigger an alarm of spoofing and switch to another means of navigation than continue relying on GPS and wander into enemy territory or deliver ordinance on the wrong target.
+
+##### DATA SOURCE ####
+The data that was used to train and test the model was generated using the ANT Center's FLY sensor simulation model. The original source comes from 4 test flights, with over 8 hours of total flight time,
+recorded by the ANT Center, which was then fed into Fly to generate simulated sensor readings. The flight data and sensor readings were recorded in log files which were then parsed and combined in a CSV file.
+Since the flight data was recorded every millisecond, it was downsampled to match the observation per second output from Fly. In between the combination of log files into the singular CSV, the spoofing attack was implemented.
+
+The attacks vary in their drift from the true position, the largest of which is a drift rate of 5 meters per second. A future attack to be implemented will shift the position readings in time.
+Once the data was recorded, it was into its 18 features, 3 of which were succeptible to the attack.
+Finally, every observation was normalized to represent a value between 0 and 1.
+
+########## METHODOLOGY #####
+All of the results in this presentation were evaluated using data from all flights, susceptible to a spoof with a 5 meter per second drift in latitude. They all made use of a 75/25 train/test split.
+
+The data was run through 3 different classical binary classification models: Random Forests with 100 trees, K-Nearest Neighbors with 5 neighbors, and Support Vector classification.
+The metrics used to evaluate these models were precision, recall, and F1 score, which attempts to balance the former two metrics. However, the focus was on recall to prioritize true positive rate.
+
+The data was also used to evaluate 6 different advanced machine learning binary classification models: 2 simple multilayer-perceptron implementations, convolutional neural network, multivariate
+long-short term memory, multivariate long-short term memory with dropout, multivariate long-short term memory with convolution, and 2d Lt Marvin's implementation of a multivariate long-short term memory
+fully convolutional network developed for his thesis. The models were fed tensors with 100 timesteps. The loss function for these advanced models was binary crossentropy, and the models were fit over 100 epochs.
+
+########## RESULTS 1 #####
+As you can see in the tabulated results, K-Nearest Neighbors and Random Forests did exceptionally well on this dataset, both with a recall above 96%. This is promising, as it extends the results of previous work
+to the new dataset, and shows that classical methods are effective at identifying even more discrete attacks. 
+
+However, the support vector classifier only outputs a single class.
+
+########## Results 2 ###
+The basic multi-layer perceptron was implemented in 2 ways: first, using sklearns built-in classifier, and secondly with keras.
+The SKlearn perceptron performed similarly to the support vector classifier, only outputting a single class.
+The keras perceptron, however, shows promising growth, but after 100 epochs its accuracy hovers around only 50%
+
+##### Results 3 #####
+The Convolutional Neural Network and Multivariate Long-Short Term Memory model had similary results.
+Both models have a very strong divergence, in both loss and accuracy, and again the accuracy deviates around 50%
+
+##### Results 4 ####
+Multivariate Long-Short Term Memory with droupout, and in tandem with a convolutional neural network, both yielded sporadic results.
+There is again a divergence among the loss functions, althought it is less drastic, and the accuracy for both still lingers around 50%
+
+##### Results 5 #####
+Lt Marvin's Multivariate long-short term memory fully convolutional network, when used with this dataset, yielded very high loss.
+There was no improvement of loss nor accuracy over any epoch. This outcome is likely a sign that the current model is not compatible with the new dataset and needs to be adapted.
+
+
+#####
+The key takeaways from these results are that with more accurate data with more subtle attacks, classical machine learning methods will yield very good results.
+
+In order to better assess the performance of advanced machine learning methods, they need to be tested using tensors with larger timesteps.
+Other hyperparameters of these models should also be better tuned.
+
+And most importantly, an anomaly detection approach may yield better results than classification, since the key indication of an attack will be an anomalous observation when comparing the change in position
+to other sensor readings over the time series.
+
+##########
+In order to improve upon these results, and as part of my thesis, the following revisions will be made:
+The implementation of a time shifting attack will be finalized and tested.
+The advanced models will be tested with larger tensors and more finely tuned hyperparameters.
+An anomaly detection approach using advanced machine learning methods, such as autoencoders, will be modeled and tested.
+And other available features may be added to the dataset.
+
+Thank you.
